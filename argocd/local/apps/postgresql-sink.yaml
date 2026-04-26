@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgresql-sink
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  sources:
+    - repoURL: ghcr.io/imdineshsandaru
+      chart: postgresql
+      targetRevision: "18.6.2"
+      helm:
+        valueFiles:
+          - $values/envs/local/postgresql-sink/values.yaml
+    - repoURL: https://github.com/imdineshsandaru/k8s-deployments
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: postgresql-sink
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

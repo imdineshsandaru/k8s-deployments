@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: postgresql
+  name: postgresql-source
   namespace: argocd
 spec:
   project: default
@@ -11,13 +11,13 @@ spec:
       targetRevision: "18.6.2"
       helm:
         valueFiles:
-          - $values/envs/local/postgresql/values.yaml
+          - $values/envs/local/postgresql-source/values.yaml
     - repoURL: https://github.com/imdineshsandaru/k8s-deployments
       targetRevision: HEAD
       ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: postgresql
+    namespace: postgresql-source
   syncPolicy:
     automated:
       prune: true

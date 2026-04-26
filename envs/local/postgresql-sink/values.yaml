@@ -1,8 +1,8 @@
 auth:
   postgresPassword: "localdev"
-  username: "myuser"
+  username: "sinkuser"
   password: "localdev"
-  database: "mydb"
+  database: "sinkdb"
 
 primary:
   persistence:
