@@ -1,0 +1,27 @@
+# Debezium PostgreSQL Source Connector
+# Captures all table changes from sourcedb and publishes to Kafka topics: cdc.<schema>.<table>
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: pg-source
+  namespace: kafka
+  labels:
+    # Must match the KafkaConnect CR name
+    strimzi.io/cluster: debezium-connect
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: 1
+  config:
+    database.hostname: postgresql-source.postgresql-source.svc.cluster.local
+    database.port: "5432"
+    database.user: replicator
+    database.password: replicatorpass
+    database.dbname: sourcedb
+    # Prefix for all Kafka topics produced by this connector
+    topic.prefix: cdc
+    # pgoutput is the native PostgreSQL logical decoding plugin (no extra install needed)
+    plugin.name: pgoutput
+    slot.name: debezium_slot
+    publication.auto.create.mode: all_tables
+    # Heartbeat to keep replication slot active even when no changes
+    heartbeat.interval.ms: "10000"

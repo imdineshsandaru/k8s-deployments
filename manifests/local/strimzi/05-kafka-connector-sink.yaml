@@ -1,0 +1,25 @@
+# JDBC Sink Connector
+# Reads from all cdc.* topics and writes to postgresql-sink
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: pg-sink
+  namespace: kafka
+  labels:
+    # Must match the KafkaConnect CR name
+    strimzi.io/cluster: debezium-connect
+spec:
+  class: io.debezium.connector.jdbc.JdbcSinkConnector
+  tasksMax: 1
+  config:
+    connection.url: jdbc:postgresql://postgresql-sink.postgresql-sink.svc.cluster.local:5432/sinkdb
+    connection.username: sinkuser
+    connection.password: localdev
+    # Subscribe to all topics produced by the source connector
+    topics.regex: "cdc\\..*"
+    insert.mode: upsert
+    primary.key.mode: record_key
+    # Auto-create and evolve tables in the sink DB to match source schema
+    schema.evolution: basic
+    auto.create: "true"
+    auto.evolve: "true"

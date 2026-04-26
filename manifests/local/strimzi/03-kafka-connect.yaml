@@ -1,0 +1,34 @@
+# KafkaConnect — uses the official Debezium image which bundles:
+#   - PostgreSQL source connector (io.debezium.connector.postgresql.PostgresConnector)
+#   - JDBC sink connector    (io.debezium.connector.jdbc.JdbcSinkConnector)
+# No custom image build needed for this POC.
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: debezium-connect
+  namespace: kafka
+  annotations:
+    # Enables KafkaConnector CRs to manage connectors declaratively
+    strimzi.io/use-connector-resources: "true"
+spec:
+  # Use Debezium image directly — bypasses Strimzi's image build process
+  image: debezium/connect:3.0
+  version: 3.9.0
+  replicas: 1
+  bootstrapServers: cdc-kafka-kafka-bootstrap.kafka.svc.cluster.local:9092
+  config:
+    group.id: cdc-connect-cluster
+    offset.storage.topic: connect-offsets
+    config.storage.topic: connect-configs
+    status.storage.topic: connect-statuses
+    config.storage.replication.factor: 1
+    offset.storage.replication.factor: 1
+    status.storage.replication.factor: 1
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: false
+    value.converter.schemas.enable: false
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi

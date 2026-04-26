@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: strimzi-cdc
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/imdineshsandaru/k8s-deployments
+    targetRevision: HEAD
+    # Raw manifests directory — ArgoCD applies all files in order (01-, 02-, 03-...)
+    path: manifests/local/strimzi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kafka
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Required: Strimzi CRDs must exist before CRs can be applied
+      - ServerSideApply=true

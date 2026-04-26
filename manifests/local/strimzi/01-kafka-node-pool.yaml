@@ -1,0 +1,16 @@
+# KafkaNodePool — required for KRaft mode in Strimzi 0.42+
+# Combined controller + broker in a single pool (ideal for local single-node)
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: combined
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: cdc-kafka
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  storage:
+    type: ephemeral   # no PVC for local dev

@@ -1,0 +1,13 @@
+## Strimzi Kafka Operator — local dev
+## Watches all namespaces by default; no changes needed for local POC
+watchAnyNamespace: true
+
+logLevel: INFO
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 384Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
