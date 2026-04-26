@@ -12,8 +12,8 @@ metadata:
     strimzi.io/use-connector-resources: "true"
 spec:
   # Use Debezium image directly — bypasses Strimzi's image build process
-  image: quay.io/debezium/connect:2.7.3.Final
-  version: 3.9.0
+  image: quay.io/debezium/connect:latest
+  version: latest
   replicas: 1
   bootstrapServers: cdc-kafka-kafka-bootstrap.kafka.svc.cluster.local:9092
   config:
