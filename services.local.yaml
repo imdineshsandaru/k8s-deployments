@@ -1,0 +1,9 @@
+# Edit this file to control which services are deployed locally.
+# Then run: ./deploy.sh --env local
+
+services:
+  - name: example-service
+    enabled: true
+
+  # - name: another-service
+  #   enabled: false

@@ -1,0 +1,12 @@
+auth:
+  postgresPassword: "localdev"
+  database: "mydb"
+
+primary:
+  persistence:
+    enabled: false   # no PVC needed on local
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi

@@ -1,0 +1,51 @@
+name: Publish Helm Charts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Detect changed charts
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD \
+            | grep '^charts/' | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+          echo "charts=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Changed charts: $CHANGED"
+
+      - name: Lint, package and push each changed chart
+        run: |
+          mkdir -p /tmp/charts
+          for chart in ${{ steps.changes.outputs.charts }}; do
+            echo "=== Processing: $chart ==="
+            helm lint charts/$chart
+            helm package charts/$chart --destination /tmp/charts
+            PKG=$(ls /tmp/charts/${chart}*.tgz | head -1)
+            helm push "$PKG" oci://ghcr.io/${{ github.repository_owner }}
+            rm -f /tmp/charts/*.tgz
+          done
