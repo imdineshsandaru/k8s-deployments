@@ -33,8 +33,14 @@ jobs:
       - name: Detect changed charts
         id: changes
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD \
-            | grep '^charts/' | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+          # If only one commit exists, publish all charts; otherwise diff
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED=$(git diff --name-only HEAD~1 HEAD \
+              | grep '^charts/' | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+          else
+            echo "First commit detected — publishing all charts"
+            CHANGED=$(ls charts/ | tr '\n' ' ')
+          fi
           echo "charts=$CHANGED" >> $GITHUB_OUTPUT
           echo "Changed charts: $CHANGED"
 
