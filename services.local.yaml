@@ -2,7 +2,7 @@
 # Then run: ./deploy.sh --env local
 
 services:
-  - name: example-service
+  - name: postgresql
     enabled: true
 
   # - name: another-service

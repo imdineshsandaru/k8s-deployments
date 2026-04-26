@@ -10,8 +10,8 @@ spec:
       chart: postgresql
       targetRevision: "18.6.2"
       helm:
-      valueFiles:
-        - $values/envs/local/postgresql/values.yaml
+        valueFiles:
+          - $values/envs/local/postgresql/values.yaml
     - repoURL: https://github.com/imdineshsandaru/k8s-deployments
       targetRevision: HEAD
       ref: values

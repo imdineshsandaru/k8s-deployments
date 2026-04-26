@@ -1,5 +1,7 @@
 auth:
   postgresPassword: "localdev"
+  username: "myuser"
+  password: "localdev"
   database: "mydb"
 
 primary:
