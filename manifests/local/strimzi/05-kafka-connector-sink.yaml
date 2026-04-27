@@ -14,7 +14,7 @@ spec:
   config:
     connection.url: jdbc:postgresql://postgresql-sink.postgresql-sink.svc.cluster.local:5432/sinkdb
     connection.username: sinkuser
-    connection.password: localdev
+    connection.password: sinkpass
     # Subscribe to all topics produced by the source connector
     topics.regex: "cdc\\..*"
     insert.mode: upsert
