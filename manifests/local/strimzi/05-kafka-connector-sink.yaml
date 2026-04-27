@@ -23,3 +23,8 @@ spec:
     schema.evolution: basic
     auto.create: "true"
     auto.evolve: "true"
+    # Essential SMT to convert Debezium's complex envelope (before/after/source) into flat row data
+    transforms: unwrap
+    transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
+    transforms.unwrap.drop.tombstones: false
+    transforms.unwrap.delete.handling.mode: drop
