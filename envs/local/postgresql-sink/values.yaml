@@ -1,7 +1,7 @@
 auth:
-  postgresPassword: "localdev"
+  postgresPassword: "sinkpass"
   username: "sinkuser"
-  password: "localdev"
+  password: "sinkpass"
   database: "sinkdb"
 
 primary:
