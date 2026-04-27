@@ -19,15 +19,18 @@ primary:
       user: postgres
       password: "localdev"
       scripts:
-        00_replication_setup.sql: |
+        00_create_replicator.sql: |
           CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replicatorpass';
           GRANT CONNECT ON DATABASE sourcedb TO replicator;
-          \connect sourcedb
-          GRANT USAGE ON SCHEMA public TO replicator;
-          GRANT SELECT ON ALL TABLES IN SCHEMA public TO replicator;
-          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO replicator;
-          CREATE PUBLICATION debezium_pub FOR ALL TABLES;
-          
+        01_setup_publication.sh: |
+          #!/bin/bash
+          psql -U postgres -d sourcedb <<-SQL
+            GRANT USAGE ON SCHEMA public TO replicator;
+            GRANT SELECT ON ALL TABLES IN SCHEMA public TO replicator;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO replicator;
+            CREATE PUBLICATION debezium_pub FOR ALL TABLES;
+          SQL
+
 resources:
   requests:
     cpu: 100m

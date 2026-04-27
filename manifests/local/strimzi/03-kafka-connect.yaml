@@ -41,6 +41,10 @@ spec:
     key.converter.schemas.enable: true
     value.converter.schemas.enable: true
 
+    # --- Publication: use the pre-created one, don't auto-create ---
+    publication.name: debezium_pub
+    publication.auto.create.mode: disabled
+
   template:
     pod:
       imagePullSecrets:
