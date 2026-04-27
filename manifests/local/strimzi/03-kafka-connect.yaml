@@ -1,21 +1,31 @@
-# KafkaConnect — uses the official Debezium image which bundles:
-#   - PostgreSQL source connector (io.debezium.connector.postgresql.PostgresConnector)
-#   - JDBC sink connector    (io.debezium.connector.jdbc.JdbcSinkConnector)
-# No custom image build needed for this POC.
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
 metadata:
   name: debezium-connect
   namespace: kafka
   annotations:
-    # Enables KafkaConnector CRs to manage connectors declaratively
     strimzi.io/use-connector-resources: "true"
 spec:
-  # Use Debezium image directly — bypasses Strimzi's image build process
-  image: quay.io/debezium/connect:latest
-  version: latest
+  version: 3.7.0
   replicas: 1
   bootstrapServers: cdc-kafka-kafka-bootstrap.kafka.svc.cluster.local:9092
+
+  # Strimzi builds the image itself — downloads Debezium JARs and pushes to GHCR
+  build:
+    output:
+      type: docker
+      image: ghcr.io/imdineshsandaru/debezium-connect:2.7.3
+      pushSecret: ghcr-secret
+    plugins:
+      - name: debezium-postgres-connector
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.7.3.Final/debezium-connector-postgres-2.7.3.Final-plugin.tar.gz
+      - name: debezium-jdbc-sink
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-jdbc/2.7.3.Final/debezium-connector-jdbc-2.7.3.Final-plugin.tar.gz
+
   config:
     group.id: cdc-connect-cluster
     offset.storage.topic: connect-offsets
@@ -28,7 +38,16 @@ spec:
     value.converter: org.apache.kafka.connect.json.JsonConverter
     key.converter.schemas.enable: false
     value.converter.schemas.enable: false
+
+  template:
+    pod:
+      imagePullSecrets:
+        - name: ghcr-secret     # needed to pull the built image back
+
   resources:
     requests:
       cpu: 200m
       memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
