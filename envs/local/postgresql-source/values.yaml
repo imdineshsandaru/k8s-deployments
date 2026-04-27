@@ -16,14 +16,18 @@ primary:
 
   # Create a dedicated replication user and publication at first boot
   initdb:
-    scripts:
-      00_replication_setup.sql: |
-        CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replicatorpass';
-        GRANT CONNECT ON DATABASE sourcedb TO replicator;
-        GRANT USAGE ON SCHEMA public TO replicator;
-        GRANT SELECT ON ALL TABLES IN SCHEMA public TO replicator;
-        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO replicator;
-
+      user: postgres
+      password: "localdev"
+      scripts:
+        00_replication_setup.sql: |
+          CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD 'replicatorpass';
+          GRANT CONNECT ON DATABASE sourcedb TO replicator;
+          \connect sourcedb
+          GRANT USAGE ON SCHEMA public TO replicator;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO replicator;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO replicator;
+          CREATE PUBLICATION debezium_pub FOR ALL TABLES;
+          
 resources:
   requests:
     cpu: 100m
