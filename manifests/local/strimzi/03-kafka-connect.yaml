@@ -14,7 +14,7 @@ spec:
   build:
     output:
       type: docker
-      image: ghcr.io/imdineshsandaru/debezium-connect:2.7.3
+      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6
       pushSecret: ghcr-secret
     plugins:
       - name: debezium-postgres-connector
@@ -24,7 +24,9 @@ spec:
       - name: debezium-jdbc-sink
         artifacts:
           - type: tgz
-            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-jdbc/2.7.3.Final/debezium-connector-jdbc-2.7.3.Final-plugin.tar.gz
+            # Debezium 3.x is required for Kafka 4.x — rewrote sink to use public Connect API
+            # (2.7.x used InternalSinkRecord.originalRecord() which was removed in Kafka 4.0)
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-jdbc/3.0.6.Final/debezium-connector-jdbc-3.0.6.Final-plugin.tar.gz
 
   config:
     group.id: cdc-connect-cluster
