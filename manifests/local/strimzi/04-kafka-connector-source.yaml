@@ -22,6 +22,7 @@ spec:
     # pgoutput is the native PostgreSQL logical decoding plugin (no extra install needed)
     plugin.name: pgoutput
     slot.name: debezium_slot
-    publication.auto.create.mode: all_tables
+    publication.name: debezium_pub
+    publication.auto.create.mode: disabled
     # Heartbeat to keep replication slot active even when no changes
     heartbeat.interval.ms: "10000"
