@@ -25,42 +25,6 @@ Helm charts → GHCR (OCI) → ArgoCD App-of-Apps → MicroK8s
 └── deploy.sh
 ```
 
-## Adding a new service
-
-1. **Chart:**
-   ```bash
-   cp -r charts/example-service charts/my-svc
-   # Update charts/my-svc/Chart.yaml  (name + version)
-   # Update charts/my-svc/values.yaml
-   ```
-
-2. **Env values:**
-   ```bash
-   mkdir -p envs/local/my-svc
-   cp envs/local/example-service/values.yaml envs/local/my-svc/values.yaml
-   # Edit the copy for your service's local config
-   ```
-
-3. **ArgoCD Application CR:**
-   ```bash
-   cp argocd/local/apps/example-service.yaml argocd/local/apps/my-svc.yaml
-   # Edit: metadata.name, spec.source.chart, spec.destination.namespace
-   ```
-
-4. **Enable in config:**
-   ```yaml
-   # services.local.yaml
-   - name: my-svc
-     enabled: true
-   ```
-
-5. **Deploy:**
-   ```bash
-   ./deploy.sh --env local
-   ```
-
-6. **Push** — GitHub Actions publishes the chart to GHCR automatically on merge to main.
-
 ## First-time MicroK8s setup
 
 ```bash
