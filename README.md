@@ -28,8 +28,30 @@ Helm charts → GHCR (OCI) → ArgoCD App-of-Apps → MicroK8s
 ## First-time MicroK8s setup
 
 ```bash
-microk8s enable dns storage
+# Ensure system is updated
+sudo apt-get update && sudo apt-get install -y git curl
 
+# Install yq (used by deploy.sh)
+sudo snap install yq
+
+# Install MicroK8s
+sudo snap install microk8s --classic
+
+# Grant your user permissions to run microk8s commands without sudo
+sudo usermod -a -G microk8s $USER
+sudo chown -f -R $USER ~/.kube
+newgrp microk8s # apply group changes to current shell
+
+# Alias the native microk8s.kubectl to standard 'kubectl' for ease of use
+sudo snap alias microk8s.kubectl kubectl
+
+# Enable required MicroK8s addons (Check dns, hostpath-storag or storage using "microk8s status" for availability)
+microk8s enable dns storage
+```
+
+## ArgoCD setup
+
+```bash
 # Install ArgoCD
 kubectl create namespace argocd
 kubectl apply -n argocd \
@@ -38,8 +60,8 @@ kubectl apply -n argocd \
 # Wait for ArgoCD to be ready
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
 
-# Bootstrap root app (once)
-kubectl apply -f argocd/local/root-app.yaml
+# access the Argo CD web UI securely from your browser at http://localhost:8080
+kubectl port-forward svc/argocd-server -n argocd 8080:443
 
 # Get argocd ui pw
 kubectl get secret argocd-initial-admin-secret \
@@ -47,14 +69,21 @@ kubectl get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d && echo
 ```
 
-## GHCR secret for ArgoCD (private repos)
+## Initial Kubernetes Setup for Kafka & Argo CD Deployment
 
 ```bash
+# Create Kafka Namespace
+kubectl create namespace kafka
+
+# Create Container Registry Secret
 kubectl create secret docker-registry ghcr-secret \
   --docker-server=ghcr.io \
   --docker-username=YOUR_GITHUB_USERNAME \
   --docker-password=YOUR_PAT \
   -n argocd
+
+# Bootstrap root app (once)
+kubectl apply -f argocd/local/root-app.yaml
 ```
 
 ## Deploy workflow
