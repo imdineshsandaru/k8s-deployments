@@ -1,0 +1,31 @@
+# Metabase – local environment overrides
+# Metabase stores its own application state (users, dashboards, questions …)
+# in a dedicated database.  Here we point it at the postgresql-source instance
+# that is already running in the cluster.
+
+database:
+  type: postgres
+  host: postgresql-source.postgresql-source.svc.cluster.local
+  port: 5432
+  dbname: sourcedb
+  username: srcuser
+  password: localdev
+
+# Expose Metabase via NodePort so it is reachable from the host machine
+# without needing an Ingress controller.
+service:
+  type: NodePort
+  nodePort: 30300   # http://localhost:30300
+
+# Give the pod slightly more memory – Metabase JVM needs it on startup.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# Disable the built-in H2 persistence (we use Postgres instead).
+# persistence is only relevant when database.type == h2
+#   persistence.enabled: false  ← already false in chart defaults

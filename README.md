@@ -88,7 +88,7 @@ kubectl get kafkaconnector -n kafka
 kubectl exec -it -n postgresql-source \
   $(kubectl get pod -n postgresql-source -l app.kubernetes.io/name=postgresql \
     -o jsonpath='{.items[0].metadata.name}') \
-  -- psql -U replicator -d sourcedb
+  -- psql -U postgres -d sourcedb
 ```
 
 ```sql
