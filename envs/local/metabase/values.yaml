@@ -1,15 +1,15 @@
 # Metabase – local environment overrides
 # Metabase stores its own application state (users, dashboards, questions …)
-# in a dedicated database.  Here we point it at the postgresql-source instance
-# that is already running in the cluster.
+# in a dedicated database on the postgresql-sink instance.
+# metabasedb is created by postgresql-sink's initdb script.
 
 database:
   type: postgres
-  host: postgresql-source.postgresql-source.svc.cluster.local
+  host: postgresql-sink.postgresql-sink.svc.cluster.local
   port: 5432
-  dbname: sourcedb
-  username: srcuser
-  password: localdev
+  dbname: metabasedb
+  username: metabaseuser
+  password: metabasepass
 
 # Expose Metabase via NodePort so it is reachable from the host machine
 # without needing an Ingress controller.
@@ -25,7 +25,3 @@ resources:
   limits:
     cpu: "1"
     memory: 1Gi
-
-# Disable the built-in H2 persistence (we use Postgres instead).
-# persistence is only relevant when database.type == h2
-#   persistence.enabled: false  ← already false in chart defaults

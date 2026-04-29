@@ -8,6 +8,16 @@ primary:
   persistence:
     enabled: false   # no PVC needed on local
 
+  # Create a dedicated database + user for Metabase application metadata
+  initdb:
+    user: postgres
+    password: "sinkpass"
+    scripts:
+      00_create_metabase_db.sql: |
+        CREATE USER metabaseuser WITH ENCRYPTED PASSWORD 'metabasepass';
+        CREATE DATABASE metabasedb OWNER metabaseuser;
+        GRANT ALL PRIVILEGES ON DATABASE metabasedb TO metabaseuser;
+
 resources:
   requests:
     cpu: 100m
