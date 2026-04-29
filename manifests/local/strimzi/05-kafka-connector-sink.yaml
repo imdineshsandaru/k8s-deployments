@@ -27,4 +27,6 @@ spec:
     transforms: unwrap
     transforms.unwrap.type: io.debezium.transforms.ExtractNewRecordState
     transforms.unwrap.drop.tombstones: false
-    transforms.unwrap.delete.handling.mode: drop
+    transforms.unwrap.delete.handling.mode: none
+
+    delete.enabled: true
