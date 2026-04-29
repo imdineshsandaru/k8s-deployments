@@ -24,6 +24,7 @@ primary:
           GRANT CONNECT ON DATABASE sourcedb TO replicator;
         01_setup_publication.sh: |
           #!/bin/bash
+          export PGPASSWORD=$POSTGRESQL_POSTGRES_PASSWORD
           psql -U postgres -d sourcedb <<-SQL
             GRANT USAGE ON SCHEMA public TO replicator;
             GRANT SELECT ON ALL TABLES IN SCHEMA public TO replicator;
