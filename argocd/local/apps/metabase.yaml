@@ -10,7 +10,7 @@ spec:
   sources:
     - repoURL: ghcr.io/imdineshsandaru
       chart: metabase
-      targetRevision: latest
+      targetRevision: "2.27.1"
       helm:
         valueFiles:
           - $values/envs/local/metabase/values.yaml
