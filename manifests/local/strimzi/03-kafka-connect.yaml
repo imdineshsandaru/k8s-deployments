@@ -14,7 +14,7 @@ spec:
   build:
     output:
       type: docker
-      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6-sf-3.22.1
+      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6-sf-0.11.5
       pushSecret: ghcr-secret
     plugins:
       - name: debezium-postgres-connector
@@ -31,8 +31,8 @@ spec:
         artifacts:
           - type: tgz
             # Source-only connector — uses public SourceRecord API, safe on Kafka 4.x
-            # Verify latest version at: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/
-            url: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/3.22.1/camel-salesforce-kafka-connector-3.22.1-package.tar.gz
+            # Latest version: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/
+            url: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/0.11.5/camel-salesforce-kafka-connector-0.11.5-package.tar.gz
 
   config:
     group.id: cdc-connect-cluster
