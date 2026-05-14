@@ -14,7 +14,7 @@ spec:
   build:
     output:
       type: docker
-      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6-sf-0.11.5
+      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6-sf-0.11.5-v2
       pushSecret: ghcr-secret
     plugins:
       - name: debezium-postgres-connector
@@ -33,6 +33,11 @@ spec:
             # Source-only connector — uses public SourceRecord API, safe on Kafka 4.x
             # Latest version: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/
             url: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/0.11.5/camel-salesforce-kafka-connector-0.11.5-package.tar.gz
+          - type: jar
+            # Kafka 4.x InstantiableClassValidator checks the default key.converter (JsonConverter)
+            # against the plugin's isolated classloader at config-definition time.
+            # Bundling connect-json into the plugin directory makes it visible to that classloader.
+            url: https://repo1.maven.org/maven2/org/apache/kafka/connect-json/4.2.0/connect-json-4.2.0.jar
 
   config:
     group.id: cdc-connect-cluster
