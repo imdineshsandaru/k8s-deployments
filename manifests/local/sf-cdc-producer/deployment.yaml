@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sf-cdc-producer
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sf-cdc-producer
+  template:
+    metadata:
+      labels:
+        app: sf-cdc-producer
+    spec:
+      containers:
+        - name: sf-cdc-producer
+          image: ghcr.io/imdineshsandaru/sf-cdc-producer:latest
+          imagePullPolicy: Always
+          env:
+            - name: SF_CHANNEL
+              value: /data/AccountChangeEvent
+            - name: KAFKA_TOPIC
+              value: sf.AccountChangeEvent
+            - name: KAFKA_BOOTSTRAP
+              value: cdc-kafka-kafka-bootstrap.kafka.svc.cluster.local:9092
+            - name: SF_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sf-credentials
+                  key: clientId
+            - name: SF_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sf-credentials
+                  key: clientSecret
+            - name: SF_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sf-credentials
+                  key: username
+            - name: SF_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sf-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      imagePullSecrets:
+        - name: ghcr-secret
