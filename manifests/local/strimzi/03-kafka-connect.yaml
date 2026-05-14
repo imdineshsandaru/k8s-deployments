@@ -14,7 +14,7 @@ spec:
   build:
     output:
       type: docker
-      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6
+      image: ghcr.io/imdineshsandaru/debezium-connect:pg-2.7.3-jdbc-3.0.6-sf-3.22.1
       pushSecret: ghcr-secret
     plugins:
       - name: debezium-postgres-connector
@@ -27,9 +27,18 @@ spec:
             # Debezium 3.x is required for Kafka 4.x — rewrote sink to use public Connect API
             # (2.7.x used InternalSinkRecord.originalRecord() which was removed in Kafka 4.0)
             url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-jdbc/3.0.6.Final/debezium-connector-jdbc-3.0.6.Final-plugin.tar.gz
+      - name: camel-salesforce-connector
+        artifacts:
+          - type: tgz
+            # Source-only connector — uses public SourceRecord API, safe on Kafka 4.x
+            # Verify latest version at: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/
+            url: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-salesforce-kafka-connector/3.22.1/camel-salesforce-kafka-connector-3.22.1-package.tar.gz
 
   config:
     group.id: cdc-connect-cluster
+    # Allow connector configs to reference env vars as ${env:VAR_NAME}
+    config.providers: env
+    config.providers.env.class: org.apache.kafka.common.config.provider.EnvVarConfigProvider
     offset.storage.topic: connect-offsets
     config.storage.topic: connect-configs
     status.storage.topic: connect-statuses
@@ -40,6 +49,30 @@ spec:
     value.converter: org.apache.kafka.connect.json.JsonConverter
     key.converter.schemas.enable: true
     value.converter.schemas.enable: true
+
+  # Mount Salesforce credentials from Secret as env vars so connectors can use ${env:SF_*}
+  externalConfiguration:
+    env:
+      - name: SF_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: sf-credentials
+            key: clientId
+      - name: SF_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sf-credentials
+            key: clientSecret
+      - name: SF_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sf-credentials
+            key: username
+      - name: SF_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sf-credentials
+            key: password
 
   template:
     pod:

@@ -1,0 +1,44 @@
+# Salesforce CDC Sink Connector
+#
+# Reads sf.* topics and writes to postgresql-sink.
+# Because Salesforce CDC events are NOT in Debezium envelope format, this connector
+# does NOT use ExtractNewRecordState. Instead it writes the raw CDC event JSON into
+# a staging table — one row per CDC event — for inspection / further processing.
+#
+# The sink table (sf_cdc_events) must be pre-created (see README for DDL).
+# Auto-create is disabled because the CDC event contains nested JSON (ChangeEventHeader)
+# which the JDBC sink cannot map to a column automatically.
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: sf-sink
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: debezium-connect
+spec:
+  class: io.debezium.connector.jdbc.JdbcSinkConnector
+  tasksMax: 1
+  config:
+    connection.url: jdbc:postgresql://postgresql-sink.postgresql-sink.svc.cluster.local:5432/sinkdb
+    connection.username: sinkuser
+    connection.password: sinkpass
+
+    # All Salesforce CDC topics produced by the sf-source connector
+    topics.regex: "sf\\..*"
+
+    # Write into a pre-created staging table (see README)
+    table.name.format: sf_cdc_events
+    insert.mode: insert
+    # No primary key — staging table uses a serial id
+    primary.key.mode: none
+
+    # Source messages are plain JSON strings (rawPayload=true in source connector)
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    value.converter: org.apache.kafka.connect.storage.StringConverter
+
+    # Store the entire CDC event in a single JSONB column
+    # The sink maps the String value → the 'event_payload' column via the field.name below
+    # The JDBC sink treats a String value as a single-field record with field name "value"
+    # so the table has a column named "value" (or rename via SMT — see README)
+    auto.create: "false"
+    auto.evolve: "false"

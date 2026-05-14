@@ -220,3 +220,187 @@ The JDBC sink connector derives the table name from the Kafka topic:
 | Restart a failed connector task | `kubectl annotate kafkaconnector pg-sink -n kafka strimzi.io/restart-task=0 --overwrite` |
 | Restart the full connector | `kubectl annotate kafkaconnector pg-sink -n kafka strimzi.io/restart=true --overwrite` |
 | WAL level must be `logical` | `psql -U replicator -d sourcedb -c "SHOW wal_level;"` |
+
+---
+
+## CDC Test Flow (Salesforce → Kafka → Postgres)
+
+**Pipeline:** Salesforce CDC → Camel Salesforce Kafka Connector → Kafka → JDBC Sink → `postgresql-sink`
+
+New manifests added:
+- `06-sf-credentials-secret.yaml` — Salesforce OAuth credentials
+- `07-kafka-connector-sf-source.yaml` — source connector (Account CDC)
+- `08-kafka-connector-sf-sink.yaml` — sink connector (writes to staging table)
+
+---
+
+### Step 0 — Salesforce setup (one-time, in Salesforce Setup UI)
+
+**A. Enable CDC on the target object**
+
+1. Go to **Setup → Integrations → Change Data Capture**
+2. Move **Account** (or whichever object) from Available to Selected
+3. Save
+
+**B. Create a Connected App**
+
+1. **Setup → App Manager → New Connected App**
+2. Check **Enable OAuth Settings**
+3. Callback URL: `https://localhost` (not used, just required)
+4. Selected OAuth Scopes: `api`, `refresh_token`, `offline_access`
+5. Save — note the **Consumer Key** and **Consumer Secret**
+
+**C. Get your security token** (if not already have it)
+
+**Setup → My Personal Information → Reset My Security Token** — it will be emailed to you.
+
+---
+
+### Step 1 — Fill in credentials and apply the Secret
+
+```bash
+# Edit the secret file with your real values
+vim manifests/local/strimzi/06-sf-credentials-secret.yaml
+
+# password = Salesforce password + security token concatenated (no space)
+# e.g. password: "MyPassword123ABCDefTokenXyz"
+
+kubectl apply -f manifests/local/strimzi/06-sf-credentials-secret.yaml
+```
+
+---
+
+### Step 2 — Rebuild the KafkaConnect image (adds Camel Salesforce plugin)
+
+Applying the updated `03-kafka-connect.yaml` triggers Strimzi to rebuild the Connect image with the new plugin:
+
+```bash
+kubectl apply -f manifests/local/strimzi/03-kafka-connect.yaml
+```
+
+Watch the build pod:
+
+```bash
+kubectl get pods -n kafka -w
+# A pod named debezium-connect-build-* will appear, run, then complete
+# Then the debezium-connect-connect-* pod restarts with the new image
+```
+
+This takes a few minutes. Wait until the connect pod is Running again before proceeding.
+
+---
+
+### Step 3 — Pre-create the staging table in postgresql-sink
+
+The SF sink connector writes raw CDC event JSON. The table must exist before the connector starts.
+
+```bash
+kubectl exec -it -n postgresql-sink \
+  $(kubectl get pod -n postgresql-sink -l app.kubernetes.io/name=postgresql \
+    -o jsonpath='{.items[0].metadata.name}') \
+  -- psql -U sinkuser -d sinkdb
+```
+
+```sql
+CREATE TABLE IF NOT EXISTS sf_cdc_events (
+    id          SERIAL PRIMARY KEY,
+    value       TEXT,           -- raw Salesforce CDC event JSON
+    received_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+### Step 4 — Deploy the SF source and sink connectors
+
+```bash
+kubectl apply -f manifests/local/strimzi/07-kafka-connector-sf-source.yaml
+kubectl apply -f manifests/local/strimzi/08-kafka-connector-sf-sink.yaml
+```
+
+Verify all four connectors are READY:
+
+```bash
+kubectl get kafkaconnector -n kafka
+# NAME        CLUSTER            CONNECTOR CLASS                                                    READY
+# pg-sink     debezium-connect   io.debezium.connector.jdbc.JdbcSinkConnector                       True
+# pg-source   debezium-connect   io.debezium.connector.postgresql.PostgresConnector                 True
+# sf-sink     debezium-connect   io.debezium.connector.jdbc.JdbcSinkConnector                       True
+# sf-source   debezium-connect   org.apache.camel.kafkaconnector.salesforce.CamelSalesforceSource…  True
+```
+
+---
+
+### Step 5 — Trigger a CDC event in Salesforce
+
+In Salesforce, update any Account record (name, phone, etc.). A CDC event is published within seconds.
+
+---
+
+### Step 6 — Verify the event arrived in Kafka
+
+```bash
+kubectl exec -it -n kafka \
+  $(kubectl get pod -n kafka -l strimzi.io/name=cdc-kafka-kafka \
+    -o jsonpath='{.items[0].metadata.name}') \
+  -- bin/kafka-console-consumer.sh \
+     --bootstrap-server localhost:9092 \
+     --topic sf.AccountChangeEvent \
+     --from-beginning \
+     --max-messages 5
+```
+
+Expect a JSON payload like:
+```json
+{
+  "schema": "...",
+  "payload": {
+    "ChangeEventHeader": {
+      "entityName": "Account",
+      "recordIds": ["001..."],
+      "changeType": "UPDATE",
+      "changedFields": ["Name"]
+    },
+    "Name": "Updated Account Name"
+  }
+}
+```
+
+---
+
+### Step 7 — Check the row landed in postgresql-sink
+
+```bash
+kubectl exec -it -n postgresql-sink \
+  $(kubectl get pod -n postgresql-sink -l app.kubernetes.io/name=postgresql \
+    -o jsonpath='{.items[0].metadata.name}') \
+  -- psql -U sinkuser -d sinkdb
+```
+
+```sql
+SELECT id, received_at, value::jsonb -> 'payload' -> 'ChangeEventHeader' ->> 'changeType' AS change_type
+FROM sf_cdc_events
+ORDER BY received_at DESC
+LIMIT 5;
+```
+
+---
+
+### Salesforce Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `sf-source` connector not READY | `kubectl describe kafkaconnector sf-source -n kafka` — check for auth errors |
+| `INVALID_SESSION_ID` in Connect logs | Wrong username/password/security-token in the secret |
+| No events in Kafka after Salesforce change | Confirm CDC is enabled for the object in Salesforce Setup |
+| `sf.AccountChangeEvent` topic not created | Check Connect worker logs: `kubectl logs -n kafka -l strimzi.io/name=debezium-connect -f` |
+| Want to track a different SF object | Edit `07-kafka-connector-sf-source.yaml`: change `topicName` to `/data/<Object>ChangeEvent` |
+
+### Tracking a different Salesforce object
+
+To track e.g. `Contact` instead of `Account`:
+
+1. Enable CDC for Contact in Salesforce Setup → Change Data Capture
+2. In `07-kafka-connector-sf-source.yaml`: set `camel.source.endpoint.topicName: /data/ContactChangeEvent` and `kafka.topic: sf.ContactChangeEvent`
+3. In `08-kafka-connector-sf-sink.yaml`: the `topics.regex: "sf\\..*"` already covers all SF topics — no change needed
+4. `kubectl apply` both files
