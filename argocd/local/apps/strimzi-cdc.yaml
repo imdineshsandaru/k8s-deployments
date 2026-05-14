@@ -15,12 +15,6 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kafka
-  ignoreDifferences:
-    - group: ""
-      kind: Secret
-      name: sf-credentials
-      jsonPointers:
-        - /data
   syncPolicy:
     automated:
       prune: true
