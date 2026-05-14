@@ -49,6 +49,9 @@ spec:
     value.converter: org.apache.kafka.connect.json.JsonConverter
     key.converter.schemas.enable: true
     value.converter.schemas.enable: true
+    # Kafka 4.x uses strict plugin classloader isolation by default (service_load).
+    # hybrid_warn falls back to scanning so connectors can see built-in converter classes.
+    plugin.discovery: hybrid_warn
 
   # Mount Salesforce credentials from Secret as env vars so connectors can use ${env:SF_*}
   externalConfiguration:
